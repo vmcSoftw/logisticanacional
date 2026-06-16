@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Monitoramento Logístico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+/* ================= TOKENS ================= */
+:root{
+  --bg:#10141b;
+  --bg-soft:#151b24;
+  --surface:#1a212c;
+  --surface-2:#202836;
+  --asphalt:#0c1016;
+  --border:#2a3340;
+  --border-soft:#222b38;
+  --text:#edf0f4;
+  --text-dim:#93a0b2;
+  --text-mute:#5c6878;
+  --amber:#f4b400;
+  --amber-soft:rgba(244,180,0,.16);
+  --teal:#2fd9c4;
+  --teal-soft:rgba(47,217,196,.14);
+  --green:#34c77b;
+  --green-soft:rgba(52,199,123,.14);
+  --red:#ff5c5c;
+  --red-soft:rgba(255,92,92,.14);
+  --font-display:'Big Shoulders Display',sans-serif;
+  --font-body:'IBM Plex Sans',-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+  --radius:10px;
+  --radius-sm:6px;
+}
+
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse 1200px 600px at 15% -10%, rgba(244,180,0,.05), transparent 60%),
+    radial-gradient(ellipse 900px 600px at 100% 0%, rgba(47,217,196,.05), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--teal);}
+button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--amber); outline-offset:2px; border-radius:4px;}
+::selection{background:var(--amber-soft);}
+
+.wrap{max-width:1320px;margin:0 auto;padding:0 24px 64px;}
+
+/* ================= HEADER ================= */
+.app-header{
+  border-bottom:1px solid var(--border-soft);
+  background:linear-gradient(180deg, rgba(255,255,255,.015), transparent);
+}
+.app-header__top{
+  max-width:1320px;margin:0 auto;padding:22px 24px 18px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand__mark{
+  width:46px;height:46px;border-radius:9px;
+  background:linear-gradient(155deg, var(--amber), #c98e00);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:800;font-size:20px;color:#15110a;
+  letter-spacing:-1px;flex-shrink:0;
+  box-shadow:0 6px 18px -6px rgba(244,180,0,.5);
+}
+.brand__text h1{
+  font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:.3px;
+  margin:0;line-height:1.05;text-transform:uppercase;
+}
+.brand__text p{margin:3px 0 0;color:var(--text-dim);font-size:13px;}
+.app-header__meta{
+  display:flex;align-items:center;gap:18px;color:var(--text-dim);font-size:12.5px;
+  font-family:var(--font-mono);
+}
+.app-header__meta .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px var(--green-soft);display:inline-block;margin-right:6px;animation:pulse 2.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+@media (prefers-reduced-motion:reduce){.app-header__meta .dot{animation:none;}}
+
+/* ticker */
+.ticker{
+  border-top:1px solid var(--border-soft);
+  background:var(--asphalt);
+  overflow:hidden;position:relative;height:38px;display:flex;align-items:center;
+}
+.ticker__label{
+  flex-shrink:0;background:var(--red);color:#1a0707;font-family:var(--font-display);
+  font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  padding:0 14px;height:100%;display:flex;align-items:center;z-index:2;
+}
+.ticker__label::after{
+  content:'';position:absolute;right:-14px;top:0;bottom:0;width:14px;
+  background:var(--red);clip-path:polygon(0 0,100% 50%,0 100%);
+}
+.ticker__track{display:flex;white-space:nowrap;animation:scroll 32s linear infinite;padding-left:24px;}
+@keyframes scroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+@media (prefers-reduced-motion:reduce){.ticker__track{animation:none;overflow-x:auto;}}
+.ticker__item{display:inline-flex;align-items:center;gap:8px;padding:0 28px;font-size:13px;color:var(--text-dim);font-family:var(--font-mono);}
+.ticker__item b{color:var(--text);font-weight:600;}
+.ticker__item .sev-critico{color:var(--red);font-weight:600;}
+.ticker__item .sev-alto{color:var(--amber);font-weight:600;}
+
+/* ================= SECTION HEADINGS ================= */
+.section{margin-top:38px;}
+.section__head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+.section__title{
+  font-family:var(--font-display);font-weight:800;font-size:20px;text-transform:uppercase;
+  letter-spacing:.4px;margin:0;display:flex;align-items:center;gap:10px;
+}
+.section__title .idx{
+  font-family:var(--font-mono);font-size:12px;color:var(--asphalt);background:var(--amber);
+  padding:2px 7px;border-radius:4px;font-weight:600;
+}
+.section__sub{color:var(--text-mute);font-size:12.5px;margin:0;}
+
+/* ================= FILTER BAR ================= */
+.filterbar{
+  margin-top:26px;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);
+  padding:16px 18px;display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-start;
+}
+.filtergroup{display:flex;flex-direction:column;gap:7px;}
+.filtergroup__label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-mute);font-weight:600;}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text-dim);
+  font-size:12.5px;padding:5px 11px;border-radius:999px;cursor:pointer;user-select:none;
+  transition:background .15s,color .15s,border-color .15s;font-family:var(--font-body);font-weight:500;
+}
+.chip:hover{border-color:var(--amber);color:var(--text);}
+.chip.is-active{background:var(--amber);color:#1a1305;border-color:var(--amber);font-weight:600;}
+.chip.is-active.tone-teal{background:var(--teal);border-color:var(--teal);color:#06201c;}
+.segrow{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;}
+.segbtn{
+  border:none;background:var(--surface-2);color:var(--text-dim);font-size:12.5px;padding:6px 14px;
+  cursor:pointer;font-family:var(--font-body);font-weight:500;border-right:1px solid var(--border);
+}
+.segbtn:last-child{border-right:none;}
+.segbtn.is-active{background:var(--teal);color:#06201c;font-weight:600;}
+.select-input, .text-input{
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);
+  padding:6px 10px;font-size:12.5px;font-family:var(--font-body);
+}
+.text-input{min-width:190px;}
+.text-input::placeholder{color:var(--text-mute);}
+.filterbar__actions{margin-left:auto;display:flex;align-items:flex-end;gap:10px;}
+.btn{
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:12.5px;font-weight:600;
+  padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);
+  display:inline-flex;align-items:center;gap:6px;transition:border-color .15s,background .15s;
+}
+.btn:hover{border-color:var(--teal);}
+.btn--ghost{background:transparent;}
+.btn--primary{background:var(--amber);color:#1a1305;border-color:var(--amber);}
+.btn--primary:hover{filter:brightness(1.08);}
+
+/* ================= KPI GRID ================= */
+.kpigrid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;}
+@media (max-width:1100px){.kpigrid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:620px){.kpigrid{grid-template-columns:repeat(2,1fr);}}
+.kpi{
+  background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);
+  padding:16px 16px 14px;position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal);}
+.kpi.tone-amber::before{background:var(--amber);}
+.kpi.tone-red::before{background:var(--red);}
+.kpi.tone-green::before{background:var(--green);}
+.kpi__label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-mute);font-weight:600;}
+.kpi__value{font-family:var(--font-display);font-weight:800;font-size:30px;margin-top:6px;line-height:1;letter-spacing:.2px;}
+.kpi__sub{font-size:11.5px;color:var(--text-dim);margin-top:6px;font-family:var(--font-mono);}
+.kpi__sub b{color:var(--text);}
+
+/* ================= PANEL ================= */
+.panel{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);padding:18px;}
+.panel--chart{padding:18px 20px 8px;}
+
+/* ================= CARRIER RANKING (signature) ================= */
+.carrierlist{display:flex;flex-direction:column;gap:16px;}
+.carrier-row__head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px;flex-wrap:wrap;}
+.carrier-row__name{font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:8px;}
+.carrier-row__badge{
+  font-family:var(--font-mono);font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.carrier-row__meta{font-family:var(--font-mono);font-size:11.5px;color:var(--text-mute);}
+.carrier-row__track{
+  position:relative;height:34px;border-radius:6px;overflow:hidden;
+  background-color:var(--asphalt);
+  background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 10px, transparent 10px 22px);
+  background-size:100% 2px;background-position:center;background-repeat:repeat-x;
+  border:1px solid var(--border-soft);
+}
+.carrier-row__fill{
+  position:absolute;left:0;top:0;bottom:0;width:0%;
+  transition:width .5s cubic-bezier(.2,.8,.2,1);
+  background:linear-gradient(90deg, rgba(47,217,196,.55), rgba(244,180,0,.55));
+  mix-blend-mode:screen;
+}
+.carrier-row__fill.tone-red{background:linear-gradient(90deg, rgba(255,92,92,.35), rgba(255,92,92,.75));}
+.carrier-row__fill.tone-amber{background:linear-gradient(90deg, rgba(244,180,0,.35), rgba(244,180,0,.75));}
+.carrier-row__fill.tone-green{background:linear-gradient(90deg, rgba(52,199,123,.3), rgba(52,199,123,.65));}
+.carrier-row__marker{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  font-family:var(--font-mono);font-size:11.5px;font-weight:700;color:#fff;
+  background:rgba(12,16,22,.85);padding:2px 7px;border-radius:999px;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.18);
+}
+.carrier-empty{color:var(--text-mute);font-size:13px;padding:20px 0;text-align:center;}
+
+/* ================= REGION CARDS ================= */
+.regiongrid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+@media (max-width:980px){.regiongrid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:620px){.regiongrid{grid-template-columns:repeat(2,1fr);}}
+.region-card{
+  border-radius:var(--radius);padding:16px;border:1px solid var(--border-soft);
+  background:var(--surface);position:relative;
+}
+.region-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:var(--radius) 0 0 var(--radius);}
+.region-card.tone-red{background:linear-gradient(180deg, var(--red-soft), var(--surface) 65%);}
+.region-card.tone-red::before{background:var(--red);}
+.region-card.tone-amber{background:linear-gradient(180deg, var(--amber-soft), var(--surface) 65%);}
+.region-card.tone-amber::before{background:var(--amber);}
+.region-card.tone-green{background:linear-gradient(180deg, var(--green-soft), var(--surface) 65%);}
+.region-card.tone-green::before{background:var(--green);}
+.region-card__name{font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:space-between;}
+.region-card__flag{font-size:10px;font-family:var(--font-mono);font-weight:700;padding:1px 6px;border-radius:4px;text-transform:uppercase;}
+.region-card__pct{font-family:var(--font-display);font-weight:800;font-size:32px;margin-top:8px;line-height:1;}
+.region-card__foot{font-size:11px;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);}
+
+/* ================= TABLES ================= */
+.datatable{width:100%;border-collapse:collapse;font-size:12.8px;}
+.datatable th{
+  text-align:left;font-size:10.8px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-mute);
+  font-weight:600;padding:0 10px 10px;border-bottom:1px solid var(--border-soft);cursor:pointer;white-space:nowrap;
+  user-select:none;
+}
+.datatable th:hover{color:var(--text);}
+.datatable th .arrow{opacity:.5;font-size:10px;margin-left:3px;}
+.datatable td{padding:10px 10px;border-bottom:1px solid var(--border-soft);font-family:var(--font-mono);vertical-align:middle;}
+.datatable tbody tr:hover{background:rgba(255,255,255,.025);}
+.datatable tbody tr.row-critico{box-shadow:inset 3px 0 0 var(--red);}
+.datatable tbody tr.row-alto{box-shadow:inset 3px 0 0 var(--amber);}
+.cell-id{color:var(--text-dim);}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;font-family:var(--font-mono);}
+.badge--green{background:var(--green-soft);color:var(--green);}
+.badge--teal{background:var(--teal-soft);color:var(--teal);}
+.badge--amber{background:var(--amber-soft);color:var(--amber);}
+.badge--red{background:var(--red-soft);color:var(--red);}
+.rank-num{font-family:var(--font-display);font-weight:800;color:var(--text-mute);font-size:15px;}
+.table-scroll{overflow-x:auto;margin:0 -18px;padding:0 18px;}
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:12px;font-size:12.5px;color:var(--text-dim);}
+.pagination button{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;cursor:pointer;}
+.pagination button:disabled{opacity:.4;cursor:not-allowed;}
+
+.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:middle;}
+.legend-dot--green{background:var(--green);}
+.legend-dot--teal{background:var(--teal);}
+.legend-dot--amber{background:var(--amber);}
+.legend-dot--red{background:var(--red);}
+.footnote{margin-top:46px;padding-top:18px;border-top:1px solid var(--border-soft);color:var(--text-mute);font-size:12px;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-header__top">
+    <div class="brand">
+      <div class="brand__mark">DL</div>
+      <div class="brand__text">
+        <h1>Central de Monitoramento Logístico</h1>
+        <p>Painel operacional de atrasos &middot; transportadoras &middot; regiões</p>
+      </div>
+    </div>
+    <div class="app-header__meta">
+      <span><span class="dot"></span>Dados consolidados</span>
+      <span id="lastUpdate">Referência: 15/06/2026</span>
+    </div>
+  </div>
+  <div class="ticker">
+    <span class="ticker__label">⚠ Alertas</span>
+    <div class="ticker__track" id="tickerTrack"></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="filterbar" id="filterbar">
+    <div class="filtergroup">
+      <span class="filtergroup__label">Região</span>
+      <div class="chiprow" id="chipsRegiao"></div>
+    </div>
+    <div class="filtergroup">
+      <span class="filtergroup__label">Transportadora</span>
+      <div class="chiprow" id="chipsTransportadora"></div>
+    </div>
+    <div class="filtergroup">
+      <span class="filtergroup__label">Status</span>
+      <div class="segrow" id="segStatus">
+        <button class="segbtn is-active" data-status="todos">Todos</button>
+        <button class="segbtn" data-status="noprazo">No prazo</button>
+        <button class="segbtn" data-status="atrasado">Atrasado</button>
+      </div>
+    </div>
+    <div class="filtergroup">
+      <span class="filtergroup__label">Período</span>
+      <select class="select-input" id="selectPeriodo">
+        <option value="tudo">Toda a base (90 dias)</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="60">Últimos 60 dias</option>
+        <option value="14">Últimos 14 dias</option>
+      </select>
+    </div>
+    <div class="filtergroup">
+      <span class="filtergroup__label">Buscar</span>
+      <input class="text-input" id="inputBusca" type="text" placeholder="ID, cidade ou transportadora…">
+    </div>
+    <div class="filterbar__actions">
+      <button class="btn btn--ghost" id="btnLimpar">✕ Limpar filtros</button>
+      <button class="btn btn--primary" id="btnExportar">⭳ Exportar CSV</button>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title"><span class="idx">01</span>Indicadores Gerais</h2>
+      <p class="section__sub">Recalculados em tempo real conforme os filtros aplicados acima</p>
+    </div>
+    <div class="kpigrid" id="kpiGrid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title"><span class="idx">02</span>Comparação entre Transportadoras</h2>
+      <p class="section__sub">Ranking por % de entregas atrasadas — faixa de rota mais "iluminada" = maior criticidade</p>
+    </div>
+    <div class="panel" id="panelTransportadoras">
+      <div class="carrierlist" id="carrierList"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title"><span class="idx">03</span>Análise por Região</h2>
+      <p class="section__sub">Mapa de calor operacional — cor indica severidade do atraso na região</p>
+    </div>
+    <div class="regiongrid" id="regionGrid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title"><span class="idx">04</span>Tendência de Atrasos</h2>
+      <p class="section__sub">% de entregas atrasadas por semana &middot; linha pontilhada = meta operacional (20%)</p>
+    </div>
+    <div class="panel panel--chart">
+      <canvas id="trendChart" height="90"></canvas>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title"><span class="idx">05</span>Priorização — Entregas Críticas</h2>
+      <p class="section__sub">Top 10 por Índice de Criticidade (atraso × valor da carga × urgência)</p>
+    </div>
+    <div class="panel panel--table" id="panelPriority"></div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2 class="section__title"><span class="idx">06</span>Log Detalhado de Entregas</h2>
+      <p class="section__sub" id="tableCount"></p>
+    </div>
+    <div class="panel panel--table" id="panelTable"></div>
+    <div class="pagination" id="pagination"></div>
+  </section>
+
+  <footer class="footnote">
+    <p><b>Metodologia:</b> atraso identificado pela diferença entre data de entrega real e data prevista. Severidade: <span class="legend-dot legend-dot--green"></span>No prazo &nbsp; <span class="legend-dot legend-dot--teal"></span>Moderado &nbsp; <span class="legend-dot legend-dot--amber"></span>Alto &nbsp; <span class="legend-dot legend-dot--red"></span>Crítico. Base simplificada para fins didáticos — 150 entregas simuladas.</p>
+  </footer>
+
+</main>
+
+<script>
+const DATA = [{"id":"ENT-1001","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-04-18","data_entrega":"2026-04-22","atraso_dias":4,"motivo":"Capacidade insuficiente","valor_carga":1515.29},{"id":"ENT-1002","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Belém","data_prevista":"2026-05-21","data_entrega":"2026-05-21","atraso_dias":0,"motivo":"-","valor_carga":6031.43},{"id":"ENT-1003","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-14","data_entrega":"2026-05-14","atraso_dias":0,"motivo":"-","valor_carga":2675.94},{"id":"ENT-1004","transportadora":"LogMax Transportes","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-04-30","data_entrega":"2026-05-02","atraso_dias":2,"motivo":"Condições climáticas","valor_carga":3501.82},{"id":"ENT-1005","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Porto Velho","data_prevista":"2026-05-01","data_entrega":"2026-05-01","atraso_dias":0,"motivo":"-","valor_carga":6944.07},{"id":"ENT-1006","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Curitiba","data_prevista":"2026-05-27","data_entrega":"2026-05-27","atraso_dias":0,"motivo":"-","valor_carga":9815.14},{"id":"ENT-1007","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Curitiba","data_prevista":"2026-03-23","data_entrega":"2026-03-23","atraso_dias":0,"motivo":"-","valor_carga":13095.42},{"id":"ENT-1008","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-04-22","data_entrega":"2026-04-22","atraso_dias":0,"motivo":"-","valor_carga":2791.14},{"id":"ENT-1009","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-06-03","data_entrega":"2026-06-03","atraso_dias":0,"motivo":"-","valor_carga":2080.28},{"id":"ENT-1010","transportadora":"BrasilFrete","regiao":"Norte","cidade":"Belém","data_prevista":"2026-06-13","data_entrega":"2026-06-17","atraso_dias":4,"motivo":"Atraso na coleta","valor_carga":883.58},{"id":"ENT-1011","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-04-14","data_entrega":"2026-04-14","atraso_dias":0,"motivo":"-","valor_carga":9952.16},{"id":"ENT-1012","transportadora":"BrasilFrete","regiao":"Norte","cidade":"Belém","data_prevista":"2026-04-18","data_entrega":"2026-04-18","atraso_dias":0,"motivo":"-","valor_carga":6517.6},{"id":"ENT-1013","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-04-15","data_entrega":"2026-04-15","atraso_dias":0,"motivo":"-","valor_carga":2152.61},{"id":"ENT-1014","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-06-06","data_entrega":"2026-06-10","atraso_dias":4,"motivo":"Avaria na carga","valor_carga":1613.76},{"id":"ENT-1015","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-05-27","data_entrega":"2026-05-27","atraso_dias":0,"motivo":"-","valor_carga":4599.66},{"id":"ENT-1016","transportadora":"LogMax Transportes","regiao":"Nordeste","cidade":"Fortaleza","data_prevista":"2026-06-08","data_entrega":"2026-06-13","atraso_dias":5,"motivo":"Trânsito intenso","valor_carga":10463.71},{"id":"ENT-1017","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-21","data_entrega":"2026-05-21","atraso_dias":0,"motivo":"-","valor_carga":3136.33},{"id":"ENT-1018","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-06","data_entrega":"2026-04-06","atraso_dias":0,"motivo":"-","valor_carga":10430.0},{"id":"ENT-1019","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Fortaleza","data_prevista":"2026-05-19","data_entrega":"2026-05-23","atraso_dias":4,"motivo":"Falha no roteiro","valor_carga":9194.08},{"id":"ENT-1020","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-05-29","data_entrega":"2026-05-29","atraso_dias":0,"motivo":"-","valor_carga":1948.18},{"id":"ENT-1021","transportadora":"TransNorte Log","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-03","data_entrega":"2026-04-03","atraso_dias":0,"motivo":"-","valor_carga":3103.36},{"id":"ENT-1022","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-04-14","data_entrega":"2026-04-14","atraso_dias":0,"motivo":"-","valor_carga":6138.5},{"id":"ENT-1023","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-05-13","data_entrega":"2026-05-13","atraso_dias":0,"motivo":"-","valor_carga":1859.18},{"id":"ENT-1024","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Belém","data_prevista":"2026-06-01","data_entrega":"2026-06-10","atraso_dias":9,"motivo":"Condições climáticas","valor_carga":635.69},{"id":"ENT-1025","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-22","data_entrega":"2026-04-22","atraso_dias":0,"motivo":"-","valor_carga":1064.63},{"id":"ENT-1026","transportadora":"Conecta Entregas","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-04-18","data_entrega":"2026-04-18","atraso_dias":0,"motivo":"-","valor_carga":2746.56},{"id":"ENT-1027","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"Fortaleza","data_prevista":"2026-05-11","data_entrega":"2026-05-19","atraso_dias":8,"motivo":"Atraso na coleta","valor_carga":5813.44},{"id":"ENT-1028","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Salvador","data_prevista":"2026-05-08","data_entrega":"2026-05-08","atraso_dias":0,"motivo":"-","valor_carga":2665.98},{"id":"ENT-1029","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-04-04","data_entrega":"2026-04-04","atraso_dias":0,"motivo":"-","valor_carga":1387.48},{"id":"ENT-1030","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-03-24","data_entrega":"2026-03-24","atraso_dias":0,"motivo":"-","valor_carga":1936.65},{"id":"ENT-1031","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Belém","data_prevista":"2026-05-09","data_entrega":"2026-05-16","atraso_dias":7,"motivo":"Trânsito intenso","valor_carga":902.75},{"id":"ENT-1032","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-05-11","data_entrega":"2026-05-11","atraso_dias":0,"motivo":"-","valor_carga":7746.74},{"id":"ENT-1033","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-04-11","data_entrega":"2026-04-11","atraso_dias":0,"motivo":"-","valor_carga":5251.1},{"id":"ENT-1034","transportadora":"BrasilFrete","regiao":"Norte","cidade":"Manaus","data_prevista":"2026-03-24","data_entrega":"2026-03-24","atraso_dias":0,"motivo":"-","valor_carga":8653.27},{"id":"ENT-1035","transportadora":"TransNorte Log","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-04-10","data_entrega":"2026-04-19","atraso_dias":9,"motivo":"Trânsito intenso","valor_carga":2449.96},{"id":"ENT-1036","transportadora":"TransNorte Log","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-31","data_entrega":"2026-05-31","atraso_dias":0,"motivo":"-","valor_carga":2963.76},{"id":"ENT-1037","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-04-20","data_entrega":"2026-04-24","atraso_dias":4,"motivo":"Pendência documental","valor_carga":3768.49},{"id":"ENT-1038","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-05-15","data_entrega":"2026-05-15","atraso_dias":0,"motivo":"-","valor_carga":2009.23},{"id":"ENT-1039","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-04-03","data_entrega":"2026-04-03","atraso_dias":0,"motivo":"-","valor_carga":10349.93},{"id":"ENT-1040","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-05-26","data_entrega":"2026-05-26","atraso_dias":0,"motivo":"-","valor_carga":12716.16},{"id":"ENT-1041","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-06-10","data_entrega":"2026-06-13","atraso_dias":3,"motivo":"Condições climáticas","valor_carga":8924.43},{"id":"ENT-1042","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-04-23","data_entrega":"2026-04-23","atraso_dias":0,"motivo":"-","valor_carga":2516.27},{"id":"ENT-1043","transportadora":"BrasilFrete","regiao":"Norte","cidade":"Rio Branco","data_prevista":"2026-04-19","data_entrega":"2026-04-19","atraso_dias":0,"motivo":"-","valor_carga":2785.43},{"id":"ENT-1044","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-03-18","data_entrega":"2026-03-18","atraso_dias":0,"motivo":"-","valor_carga":11156.46},{"id":"ENT-1045","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-05-28","data_entrega":"2026-06-08","atraso_dias":11,"motivo":"Condições climáticas","valor_carga":8345.07},{"id":"ENT-1046","transportadora":"BrasilFrete","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-04-03","data_entrega":"2026-04-09","atraso_dias":6,"motivo":"Falha no roteiro","valor_carga":8472.7},{"id":"ENT-1047","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-06-13","data_entrega":"2026-06-13","atraso_dias":0,"motivo":"-","valor_carga":5955.09},{"id":"ENT-1048","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-17","data_entrega":"2026-04-17","atraso_dias":0,"motivo":"-","valor_carga":8997.14},{"id":"ENT-1049","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Recife","data_prevista":"2026-04-29","data_entrega":"2026-04-29","atraso_dias":0,"motivo":"-","valor_carga":4889.23},{"id":"ENT-1050","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-04-07","data_entrega":"2026-04-07","atraso_dias":0,"motivo":"-","valor_carga":8045.05},{"id":"ENT-1051","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Recife","data_prevista":"2026-05-15","data_entrega":"2026-05-15","atraso_dias":0,"motivo":"-","valor_carga":9983.1},{"id":"ENT-1052","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-08","data_entrega":"2026-05-08","atraso_dias":0,"motivo":"-","valor_carga":12770.09},{"id":"ENT-1053","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-06-12","data_entrega":"2026-06-12","atraso_dias":0,"motivo":"-","valor_carga":11038.79},{"id":"ENT-1054","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"Recife","data_prevista":"2026-05-31","data_entrega":"2026-05-31","atraso_dias":0,"motivo":"-","valor_carga":1194.04},{"id":"ENT-1055","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-06-03","data_entrega":"2026-06-03","atraso_dias":0,"motivo":"-","valor_carga":8773.79},{"id":"ENT-1056","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-03-18","data_entrega":"2026-03-18","atraso_dias":0,"motivo":"-","valor_carga":6232.35},{"id":"ENT-1057","transportadora":"Conecta Entregas","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-05-03","data_entrega":"2026-05-03","atraso_dias":0,"motivo":"-","valor_carga":11646.52},{"id":"ENT-1058","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-05-21","data_entrega":"2026-05-21","atraso_dias":0,"motivo":"-","valor_carga":2289.83},{"id":"ENT-1059","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-05-10","data_entrega":"2026-05-10","atraso_dias":0,"motivo":"-","valor_carga":6098.73},{"id":"ENT-1060","transportadora":"TransNorte Log","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-05-08","data_entrega":"2026-05-08","atraso_dias":0,"motivo":"-","valor_carga":710.92},{"id":"ENT-1061","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-05-13","data_entrega":"2026-05-13","atraso_dias":0,"motivo":"-","valor_carga":2203.12},{"id":"ENT-1062","transportadora":"Conecta Entregas","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-06-10","data_entrega":"2026-06-11","atraso_dias":1,"motivo":"Falha no roteiro","valor_carga":10197.62},{"id":"ENT-1063","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-04-12","data_entrega":"2026-04-12","atraso_dias":0,"motivo":"-","valor_carga":11055.45},{"id":"ENT-1064","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-05-10","data_entrega":"2026-05-10","atraso_dias":0,"motivo":"-","valor_carga":6110.59},{"id":"ENT-1065","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-04-05","data_entrega":"2026-04-05","atraso_dias":0,"motivo":"-","valor_carga":5123.8},{"id":"ENT-1066","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-04-15","data_entrega":"2026-04-20","atraso_dias":5,"motivo":"Avaria na carga","valor_carga":1875.78},{"id":"ENT-1067","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-04-04","data_entrega":"2026-04-04","atraso_dias":0,"motivo":"-","valor_carga":12891.11},{"id":"ENT-1068","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-05-27","data_entrega":"2026-05-27","atraso_dias":0,"motivo":"-","valor_carga":7920.85},{"id":"ENT-1069","transportadora":"BrasilFrete","regiao":"Nordeste","cidade":"Fortaleza","data_prevista":"2026-05-23","data_entrega":"2026-05-23","atraso_dias":0,"motivo":"-","valor_carga":2044.14},{"id":"ENT-1070","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-04-29","data_entrega":"2026-05-03","atraso_dias":4,"motivo":"Condições climáticas","valor_carga":1542.59},{"id":"ENT-1071","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-04-29","data_entrega":"2026-04-29","atraso_dias":0,"motivo":"-","valor_carga":1690.71},{"id":"ENT-1072","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-05-18","data_entrega":"2026-05-20","atraso_dias":2,"motivo":"Falha no roteiro","valor_carga":1923.63},{"id":"ENT-1073","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-19","data_entrega":"2026-05-22","atraso_dias":3,"motivo":"Falha no roteiro","valor_carga":7882.26},{"id":"ENT-1074","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-06-05","data_entrega":"2026-06-05","atraso_dias":0,"motivo":"-","valor_carga":5225.04},{"id":"ENT-1075","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-04-04","data_entrega":"2026-04-04","atraso_dias":0,"motivo":"-","valor_carga":1143.44},{"id":"ENT-1076","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-04-30","data_entrega":"2026-04-30","atraso_dias":0,"motivo":"-","valor_carga":6170.63},{"id":"ENT-1077","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-05-17","data_entrega":"2026-05-22","atraso_dias":5,"motivo":"Capacidade insuficiente","valor_carga":10081.65},{"id":"ENT-1078","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-03-21","data_entrega":"2026-03-21","atraso_dias":0,"motivo":"-","valor_carga":998.33},{"id":"ENT-1079","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Rio Branco","data_prevista":"2026-06-11","data_entrega":"2026-06-20","atraso_dias":9,"motivo":"Falha no roteiro","valor_carga":2610.93},{"id":"ENT-1080","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-04-26","data_entrega":"2026-04-30","atraso_dias":4,"motivo":"Trânsito intenso","valor_carga":5104.35},{"id":"ENT-1081","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-04-12","data_entrega":"2026-04-14","atraso_dias":2,"motivo":"Trânsito intenso","valor_carga":2669.01},{"id":"ENT-1082","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-05-01","data_entrega":"2026-05-01","atraso_dias":0,"motivo":"-","valor_carga":2272.79},{"id":"ENT-1083","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-05-19","data_entrega":"2026-05-21","atraso_dias":2,"motivo":"Falha no roteiro","valor_carga":8458.17},{"id":"ENT-1084","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-23","data_entrega":"2026-05-23","atraso_dias":0,"motivo":"-","valor_carga":6999.67},{"id":"ENT-1085","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-05-12","data_entrega":"2026-05-12","atraso_dias":0,"motivo":"-","valor_carga":2447.6},{"id":"ENT-1086","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-05-14","data_entrega":"2026-05-14","atraso_dias":0,"motivo":"-","valor_carga":4228.81},{"id":"ENT-1087","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-04-28","data_entrega":"2026-04-28","atraso_dias":0,"motivo":"-","valor_carga":6619.67},{"id":"ENT-1088","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-05-23","data_entrega":"2026-05-23","atraso_dias":0,"motivo":"-","valor_carga":4792.44},{"id":"ENT-1089","transportadora":"BrasilFrete","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-06-08","data_entrega":"2026-06-08","atraso_dias":0,"motivo":"-","valor_carga":1682.54},{"id":"ENT-1090","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-04-26","data_entrega":"2026-04-26","atraso_dias":0,"motivo":"-","valor_carga":3329.82},{"id":"ENT-1091","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Belo Horizonte","data_prevista":"2026-06-15","data_entrega":"2026-06-15","atraso_dias":0,"motivo":"-","valor_carga":1427.99},{"id":"ENT-1092","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-05-25","data_entrega":"2026-05-25","atraso_dias":0,"motivo":"-","valor_carga":2425.25},{"id":"ENT-1093","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-03-30","data_entrega":"2026-03-30","atraso_dias":0,"motivo":"-","valor_carga":1781.67},{"id":"ENT-1094","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-22","data_entrega":"2026-04-25","atraso_dias":3,"motivo":"Condições climáticas","valor_carga":6896.79},{"id":"ENT-1095","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Porto Velho","data_prevista":"2026-05-17","data_entrega":"2026-05-24","atraso_dias":7,"motivo":"Falha no roteiro","valor_carga":958.49},{"id":"ENT-1096","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-03-26","data_entrega":"2026-03-26","atraso_dias":0,"motivo":"-","valor_carga":3396.99},{"id":"ENT-1097","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Porto Velho","data_prevista":"2026-03-28","data_entrega":"2026-03-28","atraso_dias":0,"motivo":"-","valor_carga":5689.67},{"id":"ENT-1098","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-05-23","data_entrega":"2026-05-23","atraso_dias":0,"motivo":"-","valor_carga":3237.59},{"id":"ENT-1099","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-05-29","data_entrega":"2026-05-29","atraso_dias":0,"motivo":"-","valor_carga":6585.56},{"id":"ENT-1100","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Recife","data_prevista":"2026-04-20","data_entrega":"2026-04-20","atraso_dias":0,"motivo":"-","valor_carga":939.67},{"id":"ENT-1101","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Rio Branco","data_prevista":"2026-05-14","data_entrega":"2026-05-14","atraso_dias":0,"motivo":"-","valor_carga":1742.64},{"id":"ENT-1102","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-03-27","data_entrega":"2026-03-27","atraso_dias":0,"motivo":"-","valor_carga":8369.57},{"id":"ENT-1103","transportadora":"BrasilFrete","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-04-01","data_entrega":"2026-04-01","atraso_dias":0,"motivo":"-","valor_carga":10476.94},{"id":"ENT-1104","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-04-08","data_entrega":"2026-04-08","atraso_dias":0,"motivo":"-","valor_carga":8246.0},{"id":"ENT-1105","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-05-16","data_entrega":"2026-05-16","atraso_dias":0,"motivo":"-","valor_carga":11588.95},{"id":"ENT-1106","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-03-28","data_entrega":"2026-03-28","atraso_dias":0,"motivo":"-","valor_carga":7255.33},{"id":"ENT-1107","transportadora":"BrasilFrete","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-04-16","data_entrega":"2026-04-16","atraso_dias":0,"motivo":"-","valor_carga":4842.26},{"id":"ENT-1108","transportadora":"Conecta Entregas","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-05-30","data_entrega":"2026-06-02","atraso_dias":3,"motivo":"Avaria na carga","valor_carga":1902.86},{"id":"ENT-1109","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-03-29","data_entrega":"2026-03-29","atraso_dias":0,"motivo":"-","valor_carga":1936.99},{"id":"ENT-1110","transportadora":"TransNorte Log","regiao":"Norte","cidade":"Porto Velho","data_prevista":"2026-05-09","data_entrega":"2026-05-09","atraso_dias":0,"motivo":"-","valor_carga":10531.3},{"id":"ENT-1111","transportadora":"LogMax Transportes","regiao":"Nordeste","cidade":"Salvador","data_prevista":"2026-05-15","data_entrega":"2026-05-17","atraso_dias":2,"motivo":"Falha no roteiro","valor_carga":11384.14},{"id":"ENT-1112","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-05-09","data_entrega":"2026-05-10","atraso_dias":1,"motivo":"Pendência documental","valor_carga":6998.43},{"id":"ENT-1113","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-23","data_entrega":"2026-04-23","atraso_dias":0,"motivo":"-","valor_carga":2389.88},{"id":"ENT-1114","transportadora":"Conecta Entregas","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-04-07","data_entrega":"2026-04-07","atraso_dias":0,"motivo":"-","valor_carga":1234.64},{"id":"ENT-1115","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-04-02","data_entrega":"2026-04-02","atraso_dias":0,"motivo":"-","valor_carga":9797.29},{"id":"ENT-1116","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-05-10","data_entrega":"2026-05-10","atraso_dias":0,"motivo":"-","valor_carga":3304.94},{"id":"ENT-1117","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Porto Alegre","data_prevista":"2026-06-02","data_entrega":"2026-06-02","atraso_dias":0,"motivo":"-","valor_carga":9963.51},{"id":"ENT-1118","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-05-21","data_entrega":"2026-05-21","atraso_dias":0,"motivo":"-","valor_carga":4667.17},{"id":"ENT-1119","transportadora":"LogMax Transportes","regiao":"Nordeste","cidade":"São Luís","data_prevista":"2026-04-06","data_entrega":"2026-04-06","atraso_dias":0,"motivo":"-","valor_carga":2186.08},{"id":"ENT-1120","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-04-28","data_entrega":"2026-04-28","atraso_dias":0,"motivo":"-","valor_carga":3296.94},{"id":"ENT-1121","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-04-27","data_entrega":"2026-04-27","atraso_dias":0,"motivo":"-","valor_carga":8265.79},{"id":"ENT-1122","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Joinville","data_prevista":"2026-03-22","data_entrega":"2026-03-22","atraso_dias":0,"motivo":"-","valor_carga":3507.24},{"id":"ENT-1123","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"Salvador","data_prevista":"2026-05-24","data_entrega":"2026-05-24","atraso_dias":0,"motivo":"-","valor_carga":525.16},{"id":"ENT-1124","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Salvador","data_prevista":"2026-05-17","data_entrega":"2026-05-17","atraso_dias":0,"motivo":"-","valor_carga":3841.98},{"id":"ENT-1125","transportadora":"Rota Sul Express","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-06-12","data_entrega":"2026-06-12","atraso_dias":0,"motivo":"-","valor_carga":1844.31},{"id":"ENT-1126","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-06-05","data_entrega":"2026-06-10","atraso_dias":5,"motivo":"Avaria na carga","valor_carga":2593.17},{"id":"ENT-1127","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-03-30","data_entrega":"2026-03-30","atraso_dias":0,"motivo":"-","valor_carga":2396.87},{"id":"ENT-1128","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"Salvador","data_prevista":"2026-03-23","data_entrega":"2026-03-31","atraso_dias":8,"motivo":"Pendência documental","valor_carga":2498.8},{"id":"ENT-1129","transportadora":"BrasilFrete","regiao":"Nordeste","cidade":"Recife","data_prevista":"2026-04-09","data_entrega":"2026-04-14","atraso_dias":5,"motivo":"Atraso na coleta","valor_carga":5008.8},{"id":"ENT-1130","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-16","data_entrega":"2026-04-16","atraso_dias":0,"motivo":"-","valor_carga":1331.53},{"id":"ENT-1131","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"Fortaleza","data_prevista":"2026-06-12","data_entrega":"2026-06-12","atraso_dias":0,"motivo":"-","valor_carga":9943.06},{"id":"ENT-1132","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Brasília","data_prevista":"2026-06-14","data_entrega":"2026-06-14","atraso_dias":0,"motivo":"-","valor_carga":2861.56},{"id":"ENT-1133","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"São Paulo","data_prevista":"2026-04-17","data_entrega":"2026-04-17","atraso_dias":0,"motivo":"-","valor_carga":1722.05},{"id":"ENT-1134","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-04-22","data_entrega":"2026-04-30","atraso_dias":8,"motivo":"Trânsito intenso","valor_carga":7505.78},{"id":"ENT-1135","transportadora":"LogMax Transportes","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-06-03","data_entrega":"2026-06-03","atraso_dias":0,"motivo":"-","valor_carga":1127.87},{"id":"ENT-1136","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-06-06","data_entrega":"2026-06-07","atraso_dias":1,"motivo":"Avaria na carga","valor_carga":2551.77},{"id":"ENT-1137","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-03-29","data_entrega":"2026-03-29","atraso_dias":0,"motivo":"-","valor_carga":2137.55},{"id":"ENT-1138","transportadora":"Veloz Cargas","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-05-24","data_entrega":"2026-05-24","atraso_dias":0,"motivo":"-","valor_carga":1248.46},{"id":"ENT-1139","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Campo Grande","data_prevista":"2026-04-30","data_entrega":"2026-04-30","atraso_dias":0,"motivo":"-","valor_carga":1742.61},{"id":"ENT-1140","transportadora":"LogMax Transportes","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-05-28","data_entrega":"2026-05-28","atraso_dias":0,"motivo":"-","valor_carga":2624.41},{"id":"ENT-1141","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-06-12","data_entrega":"2026-06-12","atraso_dias":0,"motivo":"-","valor_carga":1779.44},{"id":"ENT-1142","transportadora":"BrasilFrete","regiao":"Norte","cidade":"Manaus","data_prevista":"2026-06-12","data_entrega":"2026-06-20","atraso_dias":8,"motivo":"Capacidade insuficiente","valor_carga":3849.82},{"id":"ENT-1143","transportadora":"BrasilFrete","regiao":"Sul","cidade":"Florianópolis","data_prevista":"2026-06-09","data_entrega":"2026-06-09","atraso_dias":0,"motivo":"-","valor_carga":10154.61},{"id":"ENT-1144","transportadora":"Veloz Cargas","regiao":"Sul","cidade":"Curitiba","data_prevista":"2026-03-30","data_entrega":"2026-03-30","atraso_dias":0,"motivo":"-","valor_carga":2573.99},{"id":"ENT-1145","transportadora":"Rota Sul Express","regiao":"Sudeste","cidade":"Rio de Janeiro","data_prevista":"2026-05-10","data_entrega":"2026-05-10","atraso_dias":0,"motivo":"-","valor_carga":5309.5},{"id":"ENT-1146","transportadora":"Conecta Entregas","regiao":"Centro-Oeste","cidade":"Goiânia","data_prevista":"2026-06-14","data_entrega":"2026-06-14","atraso_dias":0,"motivo":"-","valor_carga":11116.97},{"id":"ENT-1147","transportadora":"Conecta Entregas","regiao":"Nordeste","cidade":"Fortaleza","data_prevista":"2026-05-26","data_entrega":"2026-05-26","atraso_dias":0,"motivo":"-","valor_carga":2225.72},{"id":"ENT-1148","transportadora":"Veloz Cargas","regiao":"Sudeste","cidade":"Vitória","data_prevista":"2026-03-29","data_entrega":"2026-03-29","atraso_dias":0,"motivo":"-","valor_carga":4556.94},{"id":"ENT-1149","transportadora":"TransNorte Log","regiao":"Nordeste","cidade":"Recife","data_prevista":"2026-04-03","data_entrega":"2026-04-03","atraso_dias":0,"motivo":"-","valor_carga":7299.83},{"id":"ENT-1150","transportadora":"BrasilFrete","regiao":"Centro-Oeste","cidade":"Cuiabá","data_prevista":"2026-04-16","data_entrega":"2026-04-16","atraso_dias":0,"motivo":"-","valor_carga":8888.98}];
+/* ===================== CONFIG ===================== */
+const HOJE = new Date('2026-06-15T00:00:00');
+const META_PCT = 20;        // meta operacional de % de atraso (linha de referência no gráfico)
+const LIMIAR_ALTO = 15;     // % atraso >= 15 -> atenção (âmbar)
+const LIMIAR_CRITICO = 30;  // % atraso >= 30 -> crítico (vermelho)
+const CRIT_ALTO = 7;        // índice de criticidade >= 7 -> alto
+const CRIT_CRITICO = 15;    // índice de criticidade >= 15 -> crítico
+const PAGE_SIZE = 10;
+
+const REGIOES = ['Norte','Nordeste','Centro-Oeste','Sudeste','Sul'];
+const TRANSPORTADORAS = Array.from(new Set(DATA.map(d=>d.transportadora))).sort();
+
+/* ===================== STATE ===================== */
+const state = {
+  regioes: new Set(REGIOES),
+  transportadoras: new Set(TRANSPORTADORAS),
+  status: 'todos',
+  periodo: 'tudo',
+  busca: '',
+  sortKey: 'data_prevista',
+  sortDir: 'desc',
+  page: 1,
+};
+
+/* ===================== HELPERS ===================== */
+function diasDesde(dataISO){
+  return Math.round((HOJE - new Date(dataISO+'T00:00:00')) / 86400000);
+}
+function fmtData(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function fmtMoeda(v){
+  return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function criticidade(d){
+  const fator = 1 + (d.valor_carga/5000);
+  return d.atraso_dias * fator;
+}
+function tierPct(pct){
+  if(pct >= LIMIAR_CRITICO) return 'red';
+  if(pct >= LIMIAR_ALTO) return 'amber';
+  return 'green';
+}
+function tierCrit(score){
+  if(score >= CRIT_CRITICO) return 'critico';
+  if(score >= CRIT_ALTO) return 'alto';
+  return 'moderado';
+}
+function tierLabel(t){
+  return {red:'Crítico', amber:'Atenção', green:'Saudável',
+          critico:'Crítico', alto:'Alto', moderado:'Moderado'}[t] || t;
+}
+
+/* ===================== FILTERING ===================== */
+function applyGlobalFilters(){
+  return DATA.filter(d=>{
+    if(!state.regioes.has(d.regiao)) return false;
+    if(!state.transportadoras.has(d.transportadora)) return false;
+    if(state.status==='noprazo' && d.atraso_dias>0) return false;
+    if(state.status==='atrasado' && d.atraso_dias===0) return false;
+    if(state.periodo!=='tudo'){
+      const dias = diasDesde(d.data_prevista);
+      if(dias > parseInt(state.periodo,10)) return false;
+    }
+    return true;
+  });
+}
+
+/* ===================== AGGREGATIONS ===================== */
+function aggregateByCarrier(rows){
+  const map = {};
+  TRANSPORTADORAS.forEach(t=> map[t] = {transportadora:t, total:0, atrasadas:0, somaAtraso:0});
+  rows.forEach(d=>{
+    const a = map[d.transportadora];
+    a.total++;
+    if(d.atraso_dias>0){ a.atrasadas++; a.somaAtraso += d.atraso_dias; }
+  });
+  return Object.values(map).filter(a=>a.total>0).map(a=>({
+    ...a,
+    pct: a.total ? (a.atrasadas/a.total*100) : 0,
+    mediaAtraso: a.atrasadas ? (a.somaAtraso/a.atrasadas) : 0,
+  })).sort((a,b)=> b.pct - a.pct);
+}
+function aggregateByRegion(rows){
+  const map = {};
+  REGIOES.forEach(r=> map[r] = {regiao:r, total:0, atrasadas:0, somaAtraso:0});
+  rows.forEach(d=>{
+    const a = map[d.regiao];
+    a.total++;
+    if(d.atraso_dias>0){ a.atrasadas++; a.somaAtraso += d.atraso_dias; }
+  });
+  return Object.values(map).map(a=>({
+    ...a,
+    pct: a.total ? (a.atrasadas/a.total*100) : 0,
+    mediaAtraso: a.atrasadas ? (a.somaAtraso/a.atrasadas) : 0,
+  })).sort((a,b)=> b.pct - a.pct);
+}
+function weeklyTrend(rows){
+  // bucket by ISO week start (Mon) based on data_prevista
+  const buckets = {};
+  rows.forEach(d=>{
+    const dt = new Date(d.data_prevista+'T00:00:00');
+    const day = dt.getDay() === 0 ? 7 : dt.getDay();
+    const monday = new Date(dt);
+    monday.setDate(dt.getDate() - (day-1));
+    const key = monday.toISOString().slice(0,10);
+    if(!buckets[key]) buckets[key] = {total:0, atrasadas:0, date:monday};
+    buckets[key].total++;
+    if(d.atraso_dias>0) buckets[key].atrasadas++;
+  });
+  return Object.values(buckets).sort((a,b)=> a.date-b.date).map(b=>({
+    label: b.date.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}),
+    pct: b.total ? (b.atrasadas/b.total*100) : 0,
+    total: b.total,
+  }));
+}
+
+/* ===================== RENDER: TICKER ===================== */
+function renderTicker(rows){
+  const carriers = aggregateByCarrier(rows).filter(c=> tierPct(c.pct)!=='green');
+  const regions = aggregateByRegion(rows).filter(r=> tierPct(r.pct)!=='green');
+  const items = [];
+  carriers.forEach(c=>{
+    const sev = tierPct(c.pct);
+    items.push(`<span class="ticker__item">🚚 <b>${c.transportadora}</b> com <span class="sev-${sev==='red'?'critico':'alto'}">${c.pct.toFixed(1)}%</span> de atraso (${c.atrasadas}/${c.total} entregas)</span>`);
+  });
+  regions.forEach(r=>{
+    const sev = tierPct(r.pct);
+    items.push(`<span class="ticker__item">📍 Região <b>${r.regiao}</b> em ${sev==='red'?'situação crítica':'atenção'} — <span class="sev-${sev==='red'?'critico':'alto'}">${r.pct.toFixed(1)}%</span> atrasada</span>`);
+  });
+  if(items.length===0){
+    items.push(`<span class="ticker__item">✅ Nenhuma transportadora ou região acima do limiar de atenção (${LIMIAR_ALTO}%) no recorte atual.</span>`);
+  }
+  const html = items.join('') + items.join(''); // duplicate for seamless scroll
+  document.getElementById('tickerTrack').innerHTML = html;
+}
+
+/* ===================== RENDER: KPIs ===================== */
+function renderKPIs(rows){
+  const total = rows.length;
+  const atrasadas = rows.filter(d=>d.atraso_dias>0);
+  const pct = total ? (atrasadas.length/total*100) : 0;
+  const mediaAtraso = atrasadas.length ? (atrasadas.reduce((s,d)=>s+d.atraso_dias,0)/atrasadas.length) : 0;
+  const carriers = aggregateByCarrier(rows).filter(c=>c.total>=3);
+  const piorCarrier = carriers.length ? carriers.reduce((a,b)=> b.pct>a.pct? b:a) : null;
+  const regions = aggregateByRegion(rows);
+  const piorRegiao = regions.length ? regions.reduce((a,b)=> b.pct>a.pct? b:a) : null;
+
+  const cards = [
+    {label:'Total de Entregas', value:total, sub:`no recorte selecionado`, tone:'teal'},
+    {label:'Entregas Atrasadas', value:atrasadas.length, sub:`${pct.toFixed(1)}% do total`, tone: tierPct(pct)==='red'?'red':(tierPct(pct)==='amber'?'amber':'green')},
+    {label:'% de Atraso Geral', value: pct.toFixed(1)+'%', sub:`meta: ≤ ${META_PCT}%`, tone: pct>META_PCT?'red':'green'},
+    {label:'Atraso Médio', value: mediaAtraso.toFixed(1)+' d', sub:'dias, entre as atrasadas', tone:'amber'},
+    {label:'Transportadora Crítica', value: piorCarrier? piorCarrier.transportadora : '—', sub: piorCarrier? `${piorCarrier.pct.toFixed(1)}% de atraso`:'sem dados', tone: piorCarrier && tierPct(piorCarrier.pct)==='red' ? 'red':'amber'},
+    {label:'Região Crítica', value: piorRegiao? piorRegiao.regiao : '—', sub: piorRegiao? `${piorRegiao.pct.toFixed(1)}% de atraso`:'sem dados', tone: piorRegiao && tierPct(piorRegiao.pct)==='red' ? 'red':'amber'},
+  ];
+  document.getElementById('kpiGrid').innerHTML = cards.map(c=>`
+    <div class="kpi tone-${c.tone}">
+      <div class="kpi__label">${c.label}</div>
+      <div class="kpi__value">${c.value}</div>
+      <div class="kpi__sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+/* ===================== RENDER: CARRIER RANKING ===================== */
+function renderCarrierRanking(rows){
+  const agg = aggregateByCarrier(rows);
+  const el = document.getElementById('carrierList');
+  if(agg.length===0){ el.innerHTML = '<div class="carrier-empty">Nenhuma entrega encontrada para os filtros aplicados.</div>'; return; }
+  const maxPct = Math.max(...agg.map(a=>a.pct), 10);
+  el.innerHTML = agg.map(a=>{
+    const tier = tierPct(a.pct);
+    const width = Math.min(100, (a.pct / (maxPct*1.08)) * 100);
+    return `
+    <div class="carrier-row">
+      <div class="carrier-row__head">
+        <span class="carrier-row__name">${a.transportadora} <span class="carrier-row__badge badge--${tier==='red'?'red':tier==='amber'?'amber':'green'}">${tierLabel(tier)}</span></span>
+        <span class="carrier-row__meta">${a.total} entregas &middot; ${a.atrasadas} atrasadas &middot; méd. ${a.mediaAtraso.toFixed(1)} d</span>
+      </div>
+      <div class="carrier-row__track">
+        <div class="carrier-row__fill tone-${tier}" style="width:${width}%"></div>
+        <span class="carrier-row__marker" style="left:${Math.max(8,Math.min(92,width))}%">${a.pct.toFixed(1)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ===================== RENDER: REGION CARDS ===================== */
+function renderRegionCards(rows){
+  const agg = aggregateByRegion(rows);
+  const el = document.getElementById('regionGrid');
+  el.innerHTML = agg.map(r=>{
+    const tier = tierPct(r.pct);
+    return `
+    <div class="region-card tone-${tier}">
+      <div class="region-card__name">${r.regiao} <span class="region-card__flag badge--${tier==='red'?'red':tier==='amber'?'amber':'green'}">${tierLabel(tier)}</span></div>
+      <div class="region-card__pct">${r.pct.toFixed(1)}%</div>
+      <div class="region-card__foot">${r.total} entregas &middot; ${r.atrasadas} atrasadas<br>méd. atraso: ${r.mediaAtraso.toFixed(1)} d</div>
+    </div>`;
+  }).join('');
+}
+
+/* ===================== RENDER: TREND CHART ===================== */
+let trendChartInstance = null;
+function renderTrendChart(rows){
+  const trend = weeklyTrend(rows);
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const labels = trend.map(t=>t.label);
+  const data = trend.map(t=> Number(t.pct.toFixed(1)));
+  if(trendChartInstance){ trendChartInstance.destroy(); }
+  trendChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'% de atraso',
+          data,
+          borderColor:'#2fd9c4',
+          backgroundColor:'rgba(47,217,196,.12)',
+          fill:true,
+          tension:.35,
+          pointRadius:3,
+          pointBackgroundColor:'#2fd9c4',
+          borderWidth:2.5,
+        },
+        {
+          label:'Meta',
+          data: labels.map(()=>META_PCT),
+          borderColor:'#f4b400',
+          borderDash:[6,5],
+          pointRadius:0,
+          borderWidth:1.5,
+          fill:false,
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{labels:{color:'#93a0b2', font:{family:'IBM Plex Sans', size:11}}},
+        tooltip:{callbacks:{label: c=> c.dataset.label+': '+c.formattedValue+'%'}},
+      },
+      scales:{
+        x:{ticks:{color:'#5c6878', font:{family:'IBM Plex Mono', size:10}}, grid:{color:'#222b38'}},
+        y:{ticks:{color:'#5c6878', font:{family:'IBM Plex Mono', size:10}, callback:v=>v+'%'}, grid:{color:'#222b38'}, suggestedMax: Math.max(40, ...data, META_PCT)+10},
+      }
+    }
+  });
+  document.getElementById('trendChart').parentElement.style.height = '280px';
+}
+
+/* ===================== RENDER: PRIORITY TABLE ===================== */
+function renderPriorityTable(rows){
+  const atrasadas = rows.filter(d=>d.atraso_dias>0)
+    .map(d=>({...d, crit: criticidade(d)}))
+    .sort((a,b)=> b.crit-a.crit)
+    .slice(0,10);
+  const el = document.getElementById('panelPriority');
+  if(atrasadas.length===0){
+    el.innerHTML = '<div class="carrier-empty">Nenhuma entrega atrasada no recorte atual — ótimo sinal operacional.</div>';
+    return;
+  }
+  el.innerHTML = `
+  <div class="table-scroll">
+  <table class="datatable">
+    <thead><tr>
+      <th>#</th><th>ID</th><th>Transportadora</th><th>Região / Cidade</th>
+      <th>Atraso</th><th>Valor da carga</th><th>Motivo</th><th>Criticidade</th>
+    </tr></thead>
+    <tbody>
+      ${atrasadas.map((d,i)=>{
+        const tier = tierCrit(d.crit);
+        return `<tr class="row-${tier}">
+          <td><span class="rank-num">${i+1}</span></td>
+          <td class="cell-id">${d.id}</td>
+          <td>${d.transportadora}</td>
+          <td>${d.regiao} &middot; ${d.cidade}</td>
+          <td>${d.atraso_dias} dias</td>
+          <td>${fmtMoeda(d.valor_carga)}</td>
+          <td>${d.motivo}</td>
+          <td><span class="badge badge--${tier==='critico'?'red':tier==='alto'?'amber':'teal'}">${d.crit.toFixed(1)} &middot; ${tierLabel(tier)}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  </div>`;
+}
+
+/* ===================== RENDER: DETAILED TABLE ===================== */
+const COLS = [
+  {key:'id', label:'ID'},
+  {key:'transportadora', label:'Transportadora'},
+  {key:'regiao', label:'Região'},
+  {key:'cidade', label:'Cidade'},
+  {key:'data_prevista', label:'Previsto'},
+  {key:'data_entrega', label:'Entregue'},
+  {key:'atraso_dias', label:'Atraso'},
+  {key:'valor_carga', label:'Valor'},
+];
+function renderDetailedTable(rows){
+  let filtered = rows;
+  if(state.busca.trim()){
+    const q = state.busca.trim().toLowerCase();
+    filtered = filtered.filter(d=>
+      d.id.toLowerCase().includes(q) ||
+      d.cidade.toLowerCase().includes(q) ||
+      d.transportadora.toLowerCase().includes(q) ||
+      d.regiao.toLowerCase().includes(q)
+    );
+  }
+  const sorted = [...filtered].sort((a,b)=>{
+    let va = a[state.sortKey], vb = b[state.sortKey];
+    if(typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if(va < vb) return state.sortDir==='asc' ? -1 : 1;
+    if(va > vb) return state.sortDir==='asc' ? 1 : -1;
+    return 0;
+  });
+  const totalPages = Math.max(1, Math.ceil(sorted.length/PAGE_SIZE));
+  if(state.page > totalPages) state.page = totalPages;
+  const start = (state.page-1)*PAGE_SIZE;
+  const pageRows = sorted.slice(start, start+PAGE_SIZE);
+
+  document.getElementById('tableCount').textContent =
+    `${sorted.length} entrega(s) encontrada(s) — exibindo ${pageRows.length ? start+1 : 0}–${start+pageRows.length} de ${sorted.length}`;
+
+  const el = document.getElementById('panelTable');
+  el.innerHTML = `
+  <div class="table-scroll">
+  <table class="datatable">
+    <thead><tr>
+      ${COLS.map(c=>`<th data-key="${c.key}">${c.label} ${state.sortKey===c.key ? `<span class="arrow">${state.sortDir==='asc'?'▲':'▼'}</span>`:''}</th>`).join('')}
+      <th>Motivo</th><th>Status</th>
+    </tr></thead>
+    <tbody>
+      ${pageRows.map(d=>{
+        const tier = d.atraso_dias===0 ? 'noprazo' : tierCrit(criticidade(d));
+        const rowClass = tier==='critico' ? 'row-critico' : (tier==='alto' ? 'row-alto' : '');
+        const badgeClass = tier==='noprazo' ? 'green' : tier==='critico' ? 'red' : tier==='alto' ? 'amber' : 'teal';
+        const statusText = d.atraso_dias===0 ? 'No prazo' : `${d.atraso_dias} dia(s) — ${tierLabel(tier)}`;
+        return `<tr class="${rowClass}">
+          <td class="cell-id">${d.id}</td>
+          <td>${d.transportadora}</td>
+          <td>${d.regiao}</td>
+          <td>${d.cidade}</td>
+          <td>${fmtData(d.data_prevista)}</td>
+          <td>${fmtData(d.data_entrega)}</td>
+          <td>${d.atraso_dias} d</td>
+          <td>${fmtMoeda(d.valor_carga)}</td>
+          <td>${d.motivo}</td>
+          <td><span class="badge badge--${badgeClass}">${statusText}</span></td>
+        </tr>`;
+      }).join('')}
+      ${pageRows.length===0 ? `<tr><td colspan="10" style="text-align:center;color:var(--text-mute);padding:24px;">Nenhum resultado para os filtros e busca atuais.</td></tr>` : ''}
+    </tbody>
+  </table>
+  </div>`;
+
+  el.querySelectorAll('th[data-key]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.key;
+      if(state.sortKey===key){ state.sortDir = state.sortDir==='asc' ? 'desc' : 'asc'; }
+      else { state.sortKey = key; state.sortDir = 'asc'; }
+      render();
+    });
+  });
+
+  document.getElementById('pagination').innerHTML = `
+    <button id="prevPage" ${state.page<=1?'disabled':''}>‹ Anterior</button>
+    <span>Página ${state.page} de ${totalPages}</span>
+    <button id="nextPage" ${state.page>=totalPages?'disabled':''}>Próxima ›</button>
+  `;
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  if(prevBtn) prevBtn.addEventListener('click', ()=>{ state.page--; render(); });
+  if(nextBtn) nextBtn.addEventListener('click', ()=>{ state.page++; render(); });
+
+  return sorted; // used for CSV export
+}
+
+/* ===================== MAIN RENDER ===================== */
+let lastSortedForExport = [];
+function render(){
+  const filtered = applyGlobalFilters();
+  renderTicker(filtered);
+  renderKPIs(filtered);
+  renderCarrierRanking(filtered);
+  renderRegionCards(filtered);
+  renderTrendChart(filtered);
+  renderPriorityTable(filtered);
+  lastSortedForExport = renderDetailedTable(filtered);
+}
+
+/* ===================== FILTER UI WIRING ===================== */
+function buildChips(containerId, items, selectedSet, tone){
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map(i=>`<button class="chip ${selectedSet.has(i)?'is-active':''} ${tone?'tone-'+tone:''}" data-val="${i}">${i}</button>`).join('');
+  el.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const val = chip.dataset.val;
+      if(selectedSet.has(val)){
+        if(selectedSet.size>1) selectedSet.delete(val); // keep at least one selected
+      } else {
+        selectedSet.add(val);
+      }
+      chip.classList.toggle('is-active', selectedSet.has(val));
+      state.page = 1;
+      render();
+    });
+  });
+}
+
+function initUI(){
+  buildChips('chipsRegiao', REGIOES, state.regioes, null);
+  buildChips('chipsTransportadora', TRANSPORTADORAS, state.transportadoras, 'teal');
+
+  document.querySelectorAll('#segStatus .segbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#segStatus .segbtn').forEach(b=>b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      state.status = btn.dataset.status;
+      state.page = 1;
+      render();
+    });
+  });
+
+  document.getElementById('selectPeriodo').addEventListener('change', e=>{
+    state.periodo = e.target.value;
+    state.page = 1;
+    render();
+  });
+
+  document.getElementById('inputBusca').addEventListener('input', e=>{
+    state.busca = e.target.value;
+    state.page = 1;
+    render();
+  });
+
+  document.getElementById('btnLimpar').addEventListener('click', ()=>{
+    state.regioes = new Set(REGIOES);
+    state.transportadoras = new Set(TRANSPORTADORAS);
+    state.status = 'todos';
+    state.periodo = 'tudo';
+    state.busca = '';
+    state.sortKey = 'data_prevista';
+    state.sortDir = 'desc';
+    state.page = 1;
+    document.getElementById('inputBusca').value = '';
+    document.getElementById('selectPeriodo').value = 'tudo';
+    document.querySelectorAll('#segStatus .segbtn').forEach(b=>b.classList.remove('is-active'));
+    document.querySelector('#segStatus .segbtn[data-status="todos"]').classList.add('is-active');
+    buildChips('chipsRegiao', REGIOES, state.regioes, null);
+    buildChips('chipsTransportadora', TRANSPORTADORAS, state.transportadoras, 'teal');
+    render();
+  });
+
+  document.getElementById('btnExportar').addEventListener('click', ()=>{
+    const rows = lastSortedForExport;
+    const header = ['ID','Transportadora','Regiao','Cidade','Data Prevista','Data Entrega','Atraso (dias)','Valor da Carga','Motivo','Criticidade'];
+    const lines = [header.join(';')];
+    rows.forEach(d=>{
+      lines.push([d.id, d.transportadora, d.regiao, d.cidade, fmtData(d.data_prevista), fmtData(d.data_entrega), d.atraso_dias, d.valor_carga.toFixed(2).replace('.',','), d.motivo, criticidade(d).toFixed(1)].join(';'));
+    });
+    const blob = new Blob(["\ufeff"+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'entregas_filtradas.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  render();
+}
+
+initUI();
+</script>
+</body>
+</html>
