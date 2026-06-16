@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística Nacional - Dashboard (Demo)</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-brand">📦 Logística</a>
+            <button class="hamburger" id="hamburger" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#" class="nav-link active">Dashboard</a></li>
+                <li><a href="#" class="nav-link">Relatórios</a></li>
+                <li><a href="#" class="nav-link">Configurações</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <header class="header">
+            <div class="header-content">
+                <h1>📊 Logística Nacional</h1>
+                <p>Monitoramento Estratégico de Performance</p>
+            </div>
+        </header>
+
+        <!-- KPIs -->
+        <section class="kpi-grid" role="region" aria-label="Indicadores de performance">
+            <div class="kpi-card kpi-primary">
+                <div class="kpi-icon">⚡</div>
+                <span class="kpi-label">Taxa de Atraso</span>
+                <h2 class="kpi-value">70%</h2>
+            </div>
+            <div class="kpi-card kpi-info">
+                <div class="kpi-icon">📦</div>
+                <span class="kpi-label">Total de Entregas</span>
+                <h2 class="kpi-value">10</h2>
+            </div>
+            <div class="kpi-card kpi-success">
+                <div class="kpi-icon">✅</div>
+                <span class="kpi-label">No Prazo</span>
+                <h2 class="kpi-value">3</h2>
+            </div>
+            <div class="kpi-card kpi-danger">
+                <div class="kpi-icon">⏰</div>
+                <span class="kpi-label">Atrasadas</span>
+                <h2 class="kpi-value">7</h2>
+            </div>
+        </section>
+
+        <!-- Gráficos -->
+        <section class="charts-grid">
+            <div class="chart-card">
+                <h3>📊 Taxa de Atraso (70% atrasadas)</h3>
+                <canvas id="chart-taxa-atraso"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>🚚 Performance por Transportadora</h3>
+                <canvas id="chart-transportadora"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>🗺️ Entregas por Região</h3>
+                <canvas id="chart-regiao"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>📈 Tendência de Dias</h3>
+                <canvas id="chart-tendencia"></canvas>
+            </div>
+        </section>
+
+        <!-- Insights -->
+        <section class="insights-grid">
+            <div class="insight-card">
+                <h3>🏆 Melhor Performance</h3>
+                <p class="insight-value">ViaCargo</p>
+                <span class="insight-detail">Sul • 0 dias (perfeito)</span>
+            </div>
+            <div class="insight-card">
+                <h3>⚠️ Maior Atraso</h3>
+                <p class="insight-value">FlashLog</p>
+                <span class="insight-detail">Sul • +7 dias</span>
+            </div>
+            <div class="insight-card">
+                <h3>📍 Região Crítica</h3>
+                <p class="insight-value">Nordeste</p>
+                <span class="insight-detail">100% de atraso</span>
+            </div>
+        </section>
+
+        <!-- Tabela -->
+        <section class="card table-container">
+            <div class="table-header">
+                <h3>📋 Registro de Operações</h3>
+                <input type="search" class="filtro-input" placeholder="🔍 Buscar por transportadora...">
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Transportadora</th>
+                            <th scope="col">Região</th>
+                            <th scope="col">Prazo</th>
+                            <th scope="col">Real</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#301</td>
+                            <td>RotaMax</td>
+                            <td>Sudeste</td>
+                            <td>3 dias</td>
+                            <td>7 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                        <tr>
+                            <td>#302</td>
+                            <td>ViaCargo</td>
+                            <td>Sul</td>
+                            <td>5 dias</td>
+                            <td>5 dias</td>
+                            <td><span class="status-pill ok">No Prazo</span></td>
+                        </tr>
+                        <tr>
+                            <td>#303</td>
+                            <td>FlashLog</td>
+                            <td>Nordeste</td>
+                            <td>4 dias</td>
+                            <td>9 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                        <tr>
+                            <td>#304</td>
+                            <td>RotaMax</td>
+                            <td>Norte</td>
+                            <td>6 dias</td>
+                            <td>4 dias</td>
+                            <td><span class="status-pill ok">No Prazo</span></td>
+                        </tr>
+                        <tr>
+                            <td>#305</td>
+                            <td>ViaCargo</td>
+                            <td>Centro-Oeste</td>
+                            <td>2 dias</td>
+                            <td>6 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                        <tr>
+                            <td>#306</td>
+                            <td>FlashLog</td>
+                            <td>Sul</td>
+                            <td>5 dias</td>
+                            <td>12 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                        <tr>
+                            <td>#307</td>
+                            <td>RotaMax</td>
+                            <td>Sul</td>
+                            <td>6 dias</td>
+                            <td>9 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                        <tr>
+                            <td>#308</td>
+                            <td>ViaCargo</td>
+                            <td>Sudeste</td>
+                            <td>3 dias</td>
+                            <td>4 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                        <tr>
+                            <td>#309</td>
+                            <td>FlashLog</td>
+                            <td>Norte</td>
+                            <td>5 dias</td>
+                            <td>5 dias</td>
+                            <td><span class="status-pill ok">No Prazo</span></td>
+                        </tr>
+                        <tr>
+                            <td>#310</td>
+                            <td>ViaCargo</td>
+                            <td>Nordeste</td>
+                            <td>4 dias</td>
+                            <td>8 dias</td>
+                            <td><span class="status-pill atrasado">Atrasado</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Dados
+        const entregas = [
+            {id: 301, transportadora: "RotaMax", regiao: "Sudeste", prazo: 3, real: 7},
+            {id: 302, transportadora: "ViaCargo", regiao: "Sul", prazo: 5, real: 5},
+            {id: 303, transportadora: "FlashLog", regiao: "Nordeste", prazo: 4, real: 9},
+            {id: 304, transportadora: "RotaMax", regiao: "Norte", prazo: 6, real: 4},
+            {id: 305, transportadora: "ViaCargo", regiao: "Centro-Oeste", prazo: 2, real: 6},
+            {id: 306, transportadora: "FlashLog", regiao: "Sul", prazo: 5, real: 12},
+            {id: 307, transportadora: "RotaMax", regiao: "Sul", prazo: 6, real: 9},
+            {id: 308, transportadora: "ViaCargo", regiao: "Sudeste", prazo: 3, real: 4},
+            {id: 309, transportadora: "FlashLog", regiao: "Norte", prazo: 5, real: 5},
+            {id: 310, transportadora: "ViaCargo", regiao: "Nordeste", prazo: 4, real: 8}
+        ];
+
+        // Menu
+        document.getElementById('hamburger')?.addEventListener('click', () => {
+            document.getElementById('hamburger').classList.toggle('active');
+            document.getElementById('navMenu').classList.toggle('active');
+        });
+
+        // Gráficos
+        const ctx1 = document.getElementById('chart-taxa-atraso').getContext('2d');
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['No Prazo', 'Atrasado'],
+                datasets: [{
+                    data: [3, 7],
+                    backgroundColor: ['#059669', '#dc2626'],
+                    borderColor: ['#047857', '#b91c1c'],
+                    borderWidth: 2
+                }]
+            },
+            options: {responsive: true, maintainAspectRatio: true, plugins: {legend: {position: 'bottom'}}}
+        });
+
+        const ctx2 = document.getElementById('chart-transportadora').getContext('2d');
+        new Chart(ctx2, {
+            type: 'bar',
+            indexAxis: 'y',
+            data: {
+                labels: ['RotaMax', 'ViaCargo', 'FlashLog'],
+                datasets: [{
+                    label: 'Taxa de Atraso (%)',
+                    data: [67, 75, 67],
+                    backgroundColor: ['#dc2626', '#dc2626', '#dc2626'],
+                    borderRadius: 6
+                }]
+            },
+            options: {responsive: true, indexAxis: 'y', plugins: {legend: {display: false}}, scales: {x: {max: 100}}}
+        });
+
+        const ctx3 = document.getElementById('chart-regiao').getContext('2d');
+        new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: ['Centro-Oeste', 'Nordeste', 'Norte', 'Sudeste', 'Sul'],
+                datasets: [{
+                    label: 'Entregas',
+                    data: [1, 2, 2, 2, 3],
+                    backgroundColor: '#3730a3',
+                    borderRadius: 6
+                }]
+            },
+            options: {responsive: true, plugins: {legend: {display: false}}}
+        });
+
+        const ctx4 = document.getElementById('chart-tendencia').getContext('2d');
+        new Chart(ctx4, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Diferença (Real - Prazo)',
+                    data: [
+                        {x: 1, y: 4}, {x: 2, y: 0}, {x: 3, y: 5}, {x: 4, y: -2},
+                        {x: 5, y: 4}, {x: 6, y: 7}, {x: 7, y: 3}, {x: 8, y: 1},
+                        {x: 9, y: 0}, {x: 10, y: 4}
+                    ],
+                    backgroundColor: ['#dc2626', '#059669', '#dc2626', '#059669', '#dc2626', '#dc2626', '#dc2626', '#dc2626', '#059669', '#dc2626'],
+                    borderRadius: 4
+                }]
+            },
+            options: {responsive: true, plugins: {legend: {display: true}}}
+        });
+    </script>
+</body>
+</html>
